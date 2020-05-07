@@ -586,6 +586,9 @@ module.exports = class extends Base {
     }
 
     // 分享赠送订单（24h过期）
+    async giveOrderAction() {
+        
+    }
 
 
     getOrderIdByHash(hash){

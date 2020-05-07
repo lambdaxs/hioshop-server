@@ -6453,3 +6453,40 @@ INSERT INTO `hiolabs_user` VALUES (1097, '5a625pyJ5YS/5aWz', '', '微信用户b4
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE `hiolabs_gift_order` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `order_sn` varchar(20) DEFAULT NULL COMMENT '订单号',
+  `user_id` int(11) DEFAULT NULL COMMENT '用户ID',
+  `order_status` smallint(4) DEFAULT NULL COMMENT '订单状态：101未付款 102 已取消 103 系统已取消 201 已付款 202 退款中 203 已退款 301 已支付',
+  `print_info` varchar(255) DEFAULT NULL COMMENT '订单打印详情',
+  `shipping_fee` decimal(10,2) DEFAULT NULL COMMENT '邮费',
+  `pay_id` varchar(255) DEFAULT NULL COMMENT '支付id',
+  `pay_name` varchar(255) DEFAULT NULL COMMENT '支付渠道',
+  `pay_time` int(11) DEFAULT NULL COMMENT '支付时间',
+  `change_price` decimal(10,2) DEFAULT NULL COMMENT '商品价格',
+  `actual_price` decimal(10,2) DEFAULT NULL COMMENT '实际价格',
+  `order_price` decimal(10,2) DEFAULT NULL COMMENT '订单总价',
+  `goods_price` decimal(10,2) DEFAULT NULL COMMENT '商品总价',
+  `created_time` int(11) DEFAULT NULL COMMENT '订单生成时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `hiolabs_gift_order_record` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) DEFAULT NULL COMMENT '订单id',
+  `user_id` int(11) DEFAULT NULL COMMENT '用户id',
+  `addressee_id` int(11) DEFAULT NULL COMMENT '收件人用户id',
+  `status` int(11) DEFAULT NULL COMMENT '赠送单状态：101 待支付 102 待赠送 103 已赠送  104 已提货 105 已取消',
+  `give_time` int(11) DEFAULT NULL COMMENT '赠送时间',
+  `pick_time` int(11) DEFAULT NULL COMMENT '提货时间',
+  `country` smallint(5) DEFAULT NULL COMMENT '国家',
+  `province` smallint(5) DEFAULT NULL COMMENT '省',
+  `city` smallint(5) DEFAULT NULL COMMENT '市',
+  `district` smallint(5) DEFAULT NULL COMMENT '街道',
+  `adress` smallint(5) DEFAULT NULL COMMENT '地址',
+  `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+  `mobile` varchar(20) DEFAULT NULL COMMENT '电话',
+  `nickname` varchar(20) DEFAULT NULL COMMENT '姓名',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

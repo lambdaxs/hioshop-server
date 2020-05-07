@@ -605,12 +605,20 @@ module.exports = class extends Base {
             return this.fail('订单不存在');
         }
 
-        // 新增赠送单接收记录
-        await this.model('gift_order_record').add()
+        // 更新父订单的数据
+        await this.model('gift_order_record').update({
 
+        });
+        // 新增赠送单接收记录
+        await this.model('gift_order_record').add({
+
+        })
     }
 
     // 赠送订单提货
+    async pickGiftOrderAction() {
+        
+    }
 
 
 

@@ -2,8 +2,8 @@
 module.exports = {
     default_module: 'api',
     weixin: {
-        appid: 'wx7af111110000000', // 小程序 appid
-        secret: 'cb8e5adce569f9bddce5b8123123e1115aaddce505', // 小程序密钥
+        appid: 'wx657f12737082d414', // 小程序 appid
+        secret: '0e88cfe8eec2b01d55f5a9280f687646', // 小程序密钥
         mch_id: '15988888888', // 商户帐号ID
         partner_key: 'asdasdasdasdasdasdasd', // 微信支付密钥
         notify_url: 'https://www.您的域名.com/api/pay/notify' // 微信支付异步通知
@@ -24,19 +24,19 @@ module.exports = {
         ip_server_url:'http://www.kdniao.com/External/GetIp.aspx'
     },
     qiniu: {
-        access_key: 'asdlakjsdlajlajsdlas',      // 在七牛密钥管理中获取
-        secret_key: 'alskdjalksjdlasjdlajsd',    // 在七牛密钥管理中获取
-        bucket: 'bucketname',                    // 请填自己的bucket的名称
-        domain: 'domain/'                         // 请填自己的domain域名
+        access_key: '2pHub3asMB-6My8BUZ9a9hvk0VyqR2pXT1styUqg',      // 在七牛密钥管理中获取
+        secret_key: 'keRMYY41YrR7XSKkLzvaURLyln_Fg8UYZY68skaR',    // 在七牛密钥管理中获取
+        bucket: 'sannew-avatar',                    // 请填自己的bucket的名称
+        domain: 'sannewimg.xsdota.com/'                         // 请填自己的domain域名
     },
     // 在七牛新建一个https的空间，这个是用来存储分享图片的https图片，对应的是goods表中的https_pic_url
     qiniuHttps: {
-        access_key: 'asdlakjsdlajlajsdlasasdla', // 在七牛密钥管理中获取
-        secret_key: 'aaaaaaaaaaasdasdasdasd', // 在七牛密钥管理中获取
-        bucket: 'bucketname', // 自己设置的
-        domain: 'domain/', // 自己设置
+        access_key: '2pHub3asMB-6My8BUZ9a9hvk0VyqR2pXT1styUqg', // 在七牛密钥管理中获取
+        secret_key: 'keRMYY41YrR7XSKkLzvaURLyln_Fg8UYZY68skaR', // 在七牛密钥管理中获取
+        bucket: 'sannew-avatar', // 自己设置的
+        domain: 'sannewimg.xsdota.com/', // 自己设置
         // https://developer.qiniu.com/kodo/manual/1671/region-endpoint
-        zoneNum: 0  // 这个自己根据地区设置：华东 0；华北 1；华南 2； 北美 3；东南亚 4
+        zoneNum: 2  // 这个自己根据地区设置：华东 0；华北 1；华南 2； 北美 3；东南亚 4
     },
     aliexpress:{
         // https://market.aliyun.com/products/56928004/cmapi021863.html?spm=5176.730005.productlist.d_cmapi021863.6ba73524uQjLqE&innerSource=search_%E5%85%A8%E5%9B%BD%E5%BF%AB%E9%80%92%E7%89%A9%E6%B5%81%E6%9F%A5%E8%AF%A2-%E5%BF%AB%E9%80%92%E6%9F%A5%E8%AF%A2%E6%8E%A5%E5%8F%A3#sku=yuncode1586300000

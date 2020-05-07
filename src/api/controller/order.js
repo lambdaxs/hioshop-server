@@ -321,7 +321,7 @@ module.exports = class extends Base {
             if(item.number > product.goods_number){
                 checkStock++;
             }
-            if(item.retail_price != item.add_price){
+            if(item.retail_price !== item.add_price){
                 checkPrice++;
             }
         }
@@ -408,6 +408,212 @@ module.exports = class extends Base {
             orderInfo: orderInfo
         });
     }
+
+    // 提交赠送订单 (同上submit)
+    async submitGiftAction() {
+        // 获取要购买的商品，从用户购物车里获取选中的商品
+        const checkedGoodsList = await this.model('cart').where({
+            user_id: think.userId,
+            checked: 1,
+            is_delete: 0
+        }).select();
+        if (think.isEmpty(checkedGoodsList)) {
+            return this.fail('请选择商品');
+        }
+
+        let checkPrice = 0;
+        let checkStock = 0;
+        for(const item of checkedGoodsList){
+            let product = await this.model('product').where({
+                id:item.product_id
+            }).find();
+            if(item.number > product.goods_number){
+                checkStock++;
+            }
+            if(item.retail_price !== item.add_price){
+                checkPrice++;
+            }
+        }
+        if(checkStock > 0){
+            return this.fail(400, '库存不足，请重新下单');
+        }
+        if(checkPrice > 0){
+            return this.fail(400, '价格发生变化，请重新下单');
+        }
+        // 获取订单使用的红包
+        // 如果有用红包，则将红包的数量减少，当减到0时，将该条红包删除
+        // 统计商品总价
+        let goodsTotalPrice = 0.00;
+        for (const cartItem of checkedGoodsList) {
+            goodsTotalPrice += cartItem.number * cartItem.retail_price;
+        }
+
+        // 订单价格计算
+        const freightPrice = 0;
+        const orderTotalPrice = goodsTotalPrice + freightPrice; // 订单的总价
+        const actualPrice = orderTotalPrice; // 减去其它支付的金额后，要实际支付的金额 比如满减等优惠
+        const currentTime = parseInt(new Date().getTime() / 1000);
+        let print_info = '';
+        for (const item in checkedGoodsList) {
+            let i = Number(item) + 1;
+            print_info = print_info + i + '、' + checkedGoodsList[item].goods_aka + '【' + checkedGoodsList[item].number + '】 ';
+        }
+
+        //发货信息
+        // let def = await this.model('settings').where({
+        //     id: 1
+        // }).find();
+        // let sender_name = def.Name;
+        // let sender_mobile = def.Tel;
+        // // let sender_address = '';
+        // let userInfo = await this.model('user').where({
+        //     id: think.userId
+        // }).find();
+
+
+        const orderInfo = {
+            order_sn: this.model('order').generateOrderNumber(),
+            user_id: think.userId,
+            order_status: 101, // 订单初始状态为 101
+            shipping_fee: freightPrice,
+            created_time: currentTime,
+            goods_price: goodsTotalPrice,
+            order_price: orderTotalPrice,
+            actual_price: actualPrice,
+            change_price: actualPrice,
+            print_info: print_info,
+        };
+        // 开启事务，插入订单信息和订单商品
+        const orderId = await this.model('gift_order').add(orderInfo);
+        orderInfo.id = orderId;
+        if (!orderId) {
+            return this.fail('订单提交失败');
+        }
+
+        //添加赠送记录列表
+        const orderRecord = {
+          order_id: orderId,
+          user_id: think.userId,
+          status: 101,  //赠送单状态：101 待支付 102 待赠送 103 已赠送 104 待提货 105 已提货
+        };
+        await this.model('gift_order_record').add(orderRecord);
+
+        // 将商品信息录入数据库
+        const orderGoodsData = [];
+        for (const goodsItem of checkedGoodsList) {
+            orderGoodsData.push({
+                user_id: think.userId,
+                order_id: orderId,
+                goods_id: goodsItem.goods_id,
+                product_id: goodsItem.product_id,
+                goods_name: goodsItem.goods_name,
+                goods_aka: goodsItem.goods_aka,
+                list_pic_url: goodsItem.list_pic_url,
+                retail_price: goodsItem.retail_price,
+                number: goodsItem.number,
+                goods_specifition_name_value: goodsItem.goods_specifition_name_value,
+                goods_specifition_ids: goodsItem.goods_specifition_ids
+            });
+        }
+        //添加订单货物清单
+        await this.model('order_goods').addMany(orderGoodsData);
+        //清空购物车已经购买的商品
+        await this.model('cart').clearBuyGoods();
+        return this.success({
+            orderInfo: orderInfo
+        });
+    }
+
+    // 获取赠送订单列表（分页）
+    async getGiftRecordListAction() {
+        const page = this.post('page');
+        const size = 10;
+        const list = await this.model('gift_order_record').where({
+            user_id: think.userId
+        }).page(page, size).select();
+        return this.success({
+            list: list,
+        })
+    };
+
+    // 赠送订单详情
+    async getGiftOrderDetail(){
+        const orderId = this.post('orderId');
+        const orderInfo = await this.model('gift_order').where({
+            user_id: think.userId,
+            id: orderId
+        }).find();
+        if (think.isEmpty(orderInfo)) {
+            return this.fail('订单不存在');
+        }
+
+        const orderGoods = await this.model('order_goods').where({
+            user_id: think.userId,
+            order_id: orderId,
+            is_delete: 0
+        }).select();
+        var goodsCount = 0;
+        for (const gitem of orderGoods) {
+            goodsCount += gitem.number;
+        }
+
+        // 订单状态的处理
+        const statusMap = {
+            101:'待支付',
+            102: '待赠送',
+            103: '已赠送',
+            104: '已提货',
+            105:'已取消',
+        };
+        orderInfo.order_status_text = statusMap[orderInfo.status];
+
+        // 订单可操作的选择,删除，支付，收货，评论，退换货
+        const handleMap = {
+            101: {pay:true, cancel: true}, //可以支付，可取消
+            102: {give: true, pick: true}, //可以增送，可提取
+            103: {give_info: true}, //查看赠送详情
+            104: {pick_info: true}, //查看提货详情
+            105: {delete: true}, //可删除
+        };
+        const handleOption = handleMap[orderInfo.status];
+
+        return this.success({
+            orderInfo: orderInfo,
+            orderGoods: orderGoods,
+            handleOption: handleOption,
+            goodsCount: goodsCount,
+        });
+    }
+
+    // 分享赠送订单（24h过期）
+
+
+    getOrderIdByHash(hash){
+        return hash;
+    }
+
+    // 接受赠送订单
+    async acceptGiftOrderAction() {
+        // 查找对应的hash code
+        const hash = this.post('hash');
+        const preOrderInfo = getOrderIdByHash(hash);
+
+        const orderInfo = await this.model('gift_order').where({
+            id: preOrderInfo.order_id,
+        }).find();
+        if (orderInfo.id === 0) {
+            return this.fail('订单不存在');
+        }
+
+        // 新增赠送单接收记录
+        await this.model('gift_order_record').add()
+
+    }
+
+    // 赠送订单提货
+
+
+
     async updateAction() {
         const addressId = this.post('addressId');
         const orderId = this.post('orderId');

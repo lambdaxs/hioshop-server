@@ -6454,6 +6454,16 @@ COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
+CREATE TABLE `hiolabs_gift_log` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `send_uid` int(11) DEFAULT NULL COMMENT '发放人',
+  `addressee_id` int(11) DEFAULT NULL COMMENT '接收人',
+  `order_id` int(11) DEFAULT NULL COMMENT '订单id',
+  `stamp_id` int(11) DEFAULT NULL COMMENT '赠券id',
+  `created_time` int(11) DEFAULT NULL COMMENT '生成时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `hiolabs_gift_order` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `order_sn` varchar(20) DEFAULT NULL COMMENT '订单号',
@@ -6472,12 +6482,14 @@ CREATE TABLE `hiolabs_gift_order` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `hiolabs_gift_order_record` (
+CREATE TABLE `hiolabs_gift_stamp` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `order_id` int(11) DEFAULT NULL COMMENT '订单id',
   `user_id` int(11) DEFAULT NULL COMMENT '用户id',
-  `addressee_id` int(11) DEFAULT NULL COMMENT '收件人用户id',
-  `status` int(11) DEFAULT NULL COMMENT '赠送单状态：101 待支付 102 待赠送 103 已赠送  104 已提货 105 已取消',
+  `status` int(11) DEFAULT NULL COMMENT '赠送单状态：101 待赠送 102 待接收  103 已提货 104 取消(系统)',
+  `content` text COMMENT '赠券内容',
+  `share_time` int(11) DEFAULT NULL COMMENT '分享时间',
+  `share_code` varchar(255) DEFAULT NULL COMMENT '分享码',
   `give_time` int(11) DEFAULT NULL COMMENT '赠送时间',
   `pick_time` int(11) DEFAULT NULL COMMENT '提货时间',
   `country` smallint(5) DEFAULT NULL COMMENT '国家',
@@ -6488,5 +6500,17 @@ CREATE TABLE `hiolabs_gift_order_record` (
   `remark` varchar(255) DEFAULT NULL COMMENT '备注',
   `mobile` varchar(20) DEFAULT NULL COMMENT '电话',
   `nickname` varchar(20) DEFAULT NULL COMMENT '姓名',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE `hiolabs_gift_pickorder` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) DEFAULT NULL COMMENT '订单id',
+  `stamp_id` int(11) DEFAULT NULL COMMENT '赠券id',
+  `user_id` int(11) DEFAULT NULL COMMENT '用户',
+  `status` int(11) DEFAULT NULL COMMENT '提货状态',
+  `express_id` int(11) DEFAULT NULL COMMENT '物流id',
+  `created_time` int(11) DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

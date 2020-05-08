@@ -2,6 +2,9 @@ const Base = require('./base.js');
 const moment = require('moment');
 const rp = require('request-promise');
 const stringRandom = require('string-random');
+const redisCache = require('think-redis-adapter');
+
+const redisClient = (new redisCache()).Instance();
 
 module.exports = class extends Base {
     /**
@@ -525,7 +528,7 @@ module.exports = class extends Base {
         const orderInfo = await this.model('gift_order').where({
             id: orderId,
             user_id: userId,
-        }).select();
+        }).find();
         if (orderInfo.order_status === 201) {//已经支付成功
             return this.success({
                 orderInfo
@@ -560,7 +563,7 @@ module.exports = class extends Base {
         const size = 10;
         const list = await this.model('gift_stamp').where({
             user_id: think.userId
-        }).page(page, size).find();
+        }).page(page, size).select();
         return this.success({
             list: list,
         })
@@ -615,14 +618,22 @@ module.exports = class extends Base {
     // 分享赠送券（24h过期）
     async giveOrderAction() {
         const stampId = this.post('stampId');
-        const userId = this.post('userId');
+        const userId = think.userId;
         const prefix = 'share_code_';
 
         const currentTime = parseInt(new Date().getTime() / 1000);
 
+        const stampInfo = await this.model('gift_stamp').where({
+           id: stampId,
+           user_id: userId,
+        }).find();
+        if (stampInfo.status !== 101) {//非赠送状态
+            return this.fail('无法重复分享')
+        }
+
         //hash码存到redis中
-        const code = stringRandom.random(16);
-        await this.cache().set(prefix + code, JSON.stringify({
+        const code = stringRandom(16);
+        await redisClient.set(prefix + code, JSON.stringify({
             stampId: stampId,
             userId: userId,
         }),'EX', 24*3600)
@@ -630,9 +641,9 @@ module.exports = class extends Base {
         //更新赠券状态
         await this.model('gift_stamp').where({
             id: stampId,
-            userId: userId,
+            user_id: userId,
         }).update({
-            status: 201, //待接收
+            status: 102, //待接收
             share_time: currentTime,
             share_code: code,
         });
@@ -649,12 +660,16 @@ module.exports = class extends Base {
         const userId = think.userId;
 
         const prefix = 'share_code_';
-        const str = await this.cache().get(prefix + share_code);
+        const str = await redisClient.get(prefix + share_code);
         if (!str) {//过期 or 不存在
             return this.fail('赠券已失效');
         }
-        await this.cache().delete(prefix + share_code);
+        await redisClient.delete(prefix + share_code);
         const stampData = JSON.parse(str);
+
+        if (stampData.userId === userId) {
+            return this.fail('无法领取自己的赠品')
+        }
 
         const stampInfo = await this.model('gift_stamp').where({
             id: stampData.stampId,
@@ -666,7 +681,7 @@ module.exports = class extends Base {
         // 更新赠券状态
         await this.model('gift_stamp').where({
             id: stampInfo.id,
-            userId: stampInfo.userId,
+            userId: stampData.userId,
         }).update({
             userId: userId,
             status: 101, //待赠送

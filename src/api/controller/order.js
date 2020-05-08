@@ -1,8 +1,8 @@
 const Base = require('./base.js');
 const moment = require('moment');
 const rp = require('request-promise');
-const fs = require('fs');
-const http = require("http");
+const stringRandom = require('string-random');
+
 module.exports = class extends Base {
     /**
      * 获取订单列表
@@ -490,14 +490,6 @@ module.exports = class extends Base {
             return this.fail('订单提交失败');
         }
 
-        //添加赠送记录列表
-        const orderRecord = {
-          order_id: orderId,
-          user_id: think.userId,
-          status: 101,  //赠送单状态：101 待支付 102 待赠送 103 已赠送 104 待提货 105 已提货
-        };
-        await this.model('gift_order_record').add(orderRecord);
-
         // 将商品信息录入数据库
         const orderGoodsData = [];
         for (const goodsItem of checkedGoodsList) {
@@ -524,32 +516,69 @@ module.exports = class extends Base {
         });
     }
 
-    // 获取赠送订单列表（分页）
-    async getGiftRecordListAction() {
+    // 订单支付成功后添加赠券
+    async wxPayGiftAction() {
+        const orderId = this.post('orderId');
+        const userId = think.userId;
+
+        //支付成功的回调逻辑
+        const orderInfo = await this.model('gift_order').where({
+            id: orderId,
+            user_id: userId,
+        }).select();
+        if (orderInfo.order_status === 201) {//已经支付成功
+            return this.success({
+                orderInfo
+            })
+        }
+
+        await this.model('gift_order').where({
+            id: orderId,
+            user_id: userId,
+        }).update({
+            order_status: 201,//已付款
+        });
+
+
+        //添加赠券
+        const giftStamp = {
+            order_id: orderId,
+            user_id: userId,
+            status: 101, //待赠送
+            content:orderInfo.print_info,
+        };
+        await this.model('gift_stamp').add(giftStamp);
+
+        return this.success({
+            orderInfo
+        })
+    }
+
+    // 获取赠券列表（分页）
+    async getGiftStampListAction() {
         const page = this.post('page');
         const size = 10;
-        const list = await this.model('gift_order_record').where({
+        const list = await this.model('gift_stamp').where({
             user_id: think.userId
-        }).page(page, size).select();
+        }).page(page, size).find();
         return this.success({
             list: list,
         })
     };
 
-    // 赠送订单详情
-    async getGiftOrderDetail(){
-        const orderId = this.post('orderId');
-        const orderInfo = await this.model('gift_order').where({
-            user_id: think.userId,
-            id: orderId
+    // 赠送券详情
+    async getGiftStampDetailAction(){
+        const stampId = this.post('stampId');
+        const stampInfo = await this.model('gift_stamp').where({
+            id: stampId,
         }).find();
-        if (think.isEmpty(orderInfo)) {
-            return this.fail('订单不存在');
+        if (stampInfo.id === 0) {
+            return this.fail('赠品不存在')
         }
 
         const orderGoods = await this.model('order_goods').where({
             user_id: think.userId,
-            order_id: orderId,
+            order_id: stampInfo.order_id,
             is_delete: 0
         }).select();
         var goodsCount = 0;
@@ -559,68 +588,162 @@ module.exports = class extends Base {
 
         // 订单状态的处理
         const statusMap = {
-            101:'待支付',
-            102: '待赠送',
-            103: '已赠送',
-            104: '已提货',
-            105:'已取消',
+            101: '待赠送',
+            102: '待接收',
+            103: '已提货',
+            104:'已取消',
         };
-        orderInfo.order_status_text = statusMap[orderInfo.status];
+        stampInfo.order_status_text = statusMap[stampInfo.status];
 
         // 订单可操作的选择,删除，支付，收货，评论，退换货
         const handleMap = {
-            101: {pay:true, cancel: true}, //可以支付，可取消
-            102: {give: true, pick: true}, //可以增送，可提取
-            103: {give_info: true}, //查看赠送详情
-            104: {pick_info: true}, //查看提货详情
-            105: {delete: true}, //可删除
+            101: {give: true, pick: true}, //可以增送，可提取
+            102: {},
+            103: {pick_info: true}, //查看提货详情
+            104: {delete: true}, //可删除
         };
-        const handleOption = handleMap[orderInfo.status];
+        const handleOption = handleMap[stampInfo.status];
 
         return this.success({
-            orderInfo: orderInfo,
+            stampInfo: stampInfo,
             orderGoods: orderGoods,
             handleOption: handleOption,
             goodsCount: goodsCount,
         });
     }
 
-    // 分享赠送订单（24h过期）
+    // 分享赠送券（24h过期）
     async giveOrderAction() {
-        
-    }
+        const stampId = this.post('stampId');
+        const userId = this.post('userId');
+        const prefix = 'share_code_';
 
+        const currentTime = parseInt(new Date().getTime() / 1000);
 
-    getOrderIdByHash(hash){
-        return hash;
+        //hash码存到redis中
+        const code = stringRandom.random(16);
+        await this.cache().set(prefix + code, JSON.stringify({
+            stampId: stampId,
+            userId: userId,
+        }),'EX', 24*3600)
+
+        //更新赠券状态
+        await this.model('gift_stamp').where({
+            id: stampId,
+            userId: userId,
+        }).update({
+            status: 201, //待接收
+            share_time: currentTime,
+            share_code: code,
+        });
+        return this.success({
+           share_code: code
+        })
     }
 
     // 接受赠送订单
     async acceptGiftOrderAction() {
+        const currentTime = parseInt(new Date().getTime() / 1000);
         // 查找对应的hash code
-        const hash = this.post('hash');
-        const preOrderInfo = getOrderIdByHash(hash);
+        const share_code = this.post('share_code');
+        const userId = think.userId;
 
-        const orderInfo = await this.model('gift_order').where({
-            id: preOrderInfo.order_id,
+        const prefix = 'share_code_';
+        const str = await this.cache().get(prefix + share_code);
+        if (!str) {//过期 or 不存在
+            return this.fail('赠券已失效');
+        }
+        await this.cache().delete(prefix + share_code);
+        const stampData = JSON.parse(str);
+
+        const stampInfo = await this.model('gift_stamp').where({
+            id: stampData.stampId,
         }).find();
-        if (orderInfo.id === 0) {
-            return this.fail('订单不存在');
+        if (stampInfo.id === 0) {
+            return this.fail('赠券不存在');
         }
 
-        // 更新父订单的数据
-        await this.model('gift_order_record').update({
-
+        // 更新赠券状态
+        await this.model('gift_stamp').where({
+            id: stampInfo.id,
+            userId: stampInfo.userId,
+        }).update({
+            userId: userId,
+            status: 101, //待赠送
+            give_time: currentTime,
+            share_time: 0,
+            share_code: '',
         });
-        // 新增赠送单接收记录
-        await this.model('gift_order_record').add({
 
-        })
+        //追加赠券日志
+        await this.model('gift_log').add({
+            send_uid: stampData.userId,
+            addressee_id: userId,
+            order_id: stampInfo.order_id,
+            stamp_id: stampData.stampId,
+            created_time: currentTime,
+        });
+
+        return this.success({
+            stampInfo
+        });
     }
 
     // 赠送订单提货
     async pickGiftOrderAction() {
-        
+        const currentTime = parseInt(new Date().getTime() / 1000);
+        const stampId = this.post('stampId');
+        const addressId = this.post('addressId');
+        const remark = this.post('remark');
+        const userId = think.userId;
+
+        const stampInfo = await this.model('gift_stamp').where({
+            id: stampId,
+            userId:userId,
+        }).find();
+        if (stampInfo.id === 0) {
+            return this.fail('赠券不存在');
+        }
+        if (stampInfo.status !== 101) {
+            return this.fail('赠券状态异常')
+        }
+
+        //配送地址
+        const address = await this.model('address').where({
+            id: addressId
+        }).find();
+        if (address.mobile === '') {
+            return this.fail('请填写提货地址');
+        }
+
+        //变更赠券状态
+        await this.model('gift_stamp').where({
+            id: stampId,
+            userId: userId,
+        }).update({
+            status: 103, //已提货
+            pick_time: currentTime,
+            mobile: address.mobile,
+            province: address.province_id,
+            city: address.city_id,
+            district: address.district_id,
+            address: address.address,
+            remark: remark,
+            nickname: address.name,
+        });
+
+        //新增提货单
+        await this.model('gift_pickorder').add({
+            order_id: stampInfo.order_id,
+            stamp_id: stampId,
+            userId: userId,
+            status: 101, //正常提单
+            created_time: currentTime
+        });
+
+        return this.success({
+           stampInfo
+        });
     }
 
 

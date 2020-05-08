@@ -1,4 +1,6 @@
 const fileCache = require('think-cache-file');
+const redisCache = require('think-redis-adapter');
+
 const {
     Console,
     File,
@@ -13,16 +15,26 @@ const isDev = think.env === 'development';
  * @type {Object}
  */
 exports.cache = {
-    type: 'file',
+    type:'redis',
     common: {
-        timeout: 24 * 60 * 60 * 1000 // millisecond
+        timeout: 24 * 3600 * 1000
     },
-    file: {
-        handle: fileCache,
-        cachePath: path.join(think.ROOT_PATH, 'runtime/cache'), // absoulte path is necessarily required
-        pathDepth: 1,
-        gcInterval: 24 * 60 * 60 * 1000 // gc interval
+    redis: {
+        handle: redisCache,
+        port: 6379,
+        host: '127.0.0.1',
+        password: ''
     }
+    // type: 'file',
+    // common: {
+    //     timeout: 24 * 60 * 60 * 1000 // millisecond
+    // },
+    // file: {
+    //     handle: fileCache,
+    //     cachePath: path.join(think.ROOT_PATH, 'runtime/cache'), // absoulte path is necessarily required
+    //     pathDepth: 1,
+    //     gcInterval: 24 * 60 * 60 * 1000 // gc interval
+    // }
 };
 /**
  * model adapter config

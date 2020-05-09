@@ -236,3 +236,49 @@
   }
 }
 ```
+
+## 提货-赠券
+
+### url
+
+```text
+/api/order/pickGiftStamp
+```
+
+### 参数
+
+```json
+{
+  "stampId": 1,
+  "addressId": 101,
+  "remark": "配送前请提前联系"
+}
+```
+
+### 结果
+
+```json
+{
+  "errno": 0,
+  "errmsg": "",
+  "data": {
+    "stampInfo": {
+      "id": 1,
+      "order_id": 1,
+      "user_id": 1100,
+      "status": 103, //已提货
+      "content": "1、纯棉水洗色织格夏凉被【3】 ",     
+      "give_time": 1588994254,
+      "pick_time": 1588994255,
+      "country": 0,
+      "province": 3,
+      "city": 6,
+      "district": 4,
+      "adress": "太子湖北路1号",
+      "remark": "配送前请提前致电",
+      "mobile": "18686535085",
+      "nickname": "不二"
+    }
+  }
+}
+```

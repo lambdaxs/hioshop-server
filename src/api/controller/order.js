@@ -619,7 +619,7 @@ module.exports = class extends Base {
     }
 
     // 分享赠送券（24h过期）
-    async giveOrderAction() {
+    async giveStampAction() {
         const stampId = this.post('stampId');
         const userId = think.userId;
         const prefix = 'share_code_';
@@ -656,7 +656,7 @@ module.exports = class extends Base {
     }
 
     // 接受赠送订单
-    async acceptGiftOrderAction() {
+    async acceptGiftStampAction() {
         const currentTime = parseInt(new Date().getTime() / 1000);
         // 查找对应的hash code
         const share_code = this.post('share_code');
@@ -712,7 +712,7 @@ module.exports = class extends Base {
     }
 
     // 赠送订单提货
-    async pickGiftOrderAction() {
+    async pickGiftStampAction() {
         const currentTime = parseInt(new Date().getTime() / 1000);
         const stampId = this.post('stampId');
         const addressId = this.post('addressId');
@@ -721,12 +721,15 @@ module.exports = class extends Base {
 
         const stampInfo = await this.model('gift_stamp').where({
             id: stampId,
-            userId:userId,
+            user_id:userId,
         }).find();
         if (stampInfo.id === 0) {
             return this.fail('赠券不存在');
         }
         if (stampInfo.status !== 101) {
+            if (stampInfo.status === 103){
+                return this.fail('赠券已经提货')
+            }
             return this.fail('赠券状态异常')
         }
 
@@ -741,7 +744,7 @@ module.exports = class extends Base {
         //变更赠券状态
         await this.model('gift_stamp').where({
             id: stampId,
-            userId: userId,
+            user_id: userId,
         }).update({
             status: 103, //已提货
             pick_time: currentTime,
@@ -758,10 +761,20 @@ module.exports = class extends Base {
         await this.model('gift_pickorder').add({
             order_id: stampInfo.order_id,
             stamp_id: stampId,
-            userId: userId,
+            user_id: userId,
             status: 101, //正常提单
             created_time: currentTime
         });
+
+        stampInfo.status = 103; //已提货
+        stampInfo.pick_time = currentTime;
+        stampInfo.mobile = address.mobile;
+        stampInfo.province = address.province_id;
+        stampInfo.city = address.city_id;
+        stampInfo.district = address.district_id;
+        stampInfo.address = address.address;
+        stampInfo.remark = remark;
+        stampInfo.nickname = address.name;
 
         return this.success({
            stampInfo

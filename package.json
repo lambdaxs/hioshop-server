@@ -31,7 +31,7 @@
     "think-logger3": "^1.0.0",
     "think-model": "^1.0.0",
     "think-model-mysql": "^1.0.0",
-    "think-redis-adapter": "^1.0.1",
+    "think-redis-adapter": "^1.0.3",
     "think-view": "^1.0.11",
     "think-view-nunjucks": "^1.0.7",
     "thinkjs": "^3.0.0",

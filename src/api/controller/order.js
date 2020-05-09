@@ -498,7 +498,7 @@ module.exports = class extends Base {
         for (const goodsItem of checkedGoodsList) {
             orderGoodsData.push({
                 user_id: think.userId,
-                order_id: orderId,
+                gift_order_id: orderId, //记录赠单id
                 goods_id: goodsItem.goods_id,
                 product_id: goodsItem.product_id,
                 goods_name: goodsItem.goods_name,
@@ -552,6 +552,9 @@ module.exports = class extends Base {
         };
         await this.model('gift_stamp').add(giftStamp);
 
+        // 支付成功
+        orderInfo.order_status = 201;
+
         return this.success({
             orderInfo
         })
@@ -581,7 +584,7 @@ module.exports = class extends Base {
 
         const orderGoods = await this.model('order_goods').where({
             user_id: think.userId,
-            order_id: stampInfo.order_id,
+            gift_order_id: stampInfo.order_id,
             is_delete: 0
         }).select();
         var goodsCount = 0;
@@ -636,7 +639,7 @@ module.exports = class extends Base {
         await redisClient.set(prefix + code, JSON.stringify({
             stampId: stampId,
             userId: userId,
-        }),'EX', 24*3600)
+        }),'EX', 24*3600);
 
         //更新赠券状态
         await this.model('gift_stamp').where({
@@ -661,10 +664,11 @@ module.exports = class extends Base {
 
         const prefix = 'share_code_';
         const str = await redisClient.get(prefix + share_code);
+        console.log(prefix + share_code, str);
         if (!str) {//过期 or 不存在
             return this.fail('赠券已失效');
         }
-        await redisClient.delete(prefix + share_code);
+        await redisClient.del(prefix + share_code);
         const stampData = JSON.parse(str);
 
         if (stampData.userId === userId) {
@@ -681,9 +685,9 @@ module.exports = class extends Base {
         // 更新赠券状态
         await this.model('gift_stamp').where({
             id: stampInfo.id,
-            userId: stampData.userId,
+            user_id: stampData.userId,
         }).update({
-            userId: userId,
+            user_id: userId,
             status: 101, //待赠送
             give_time: currentTime,
             share_time: 0,
@@ -698,6 +702,9 @@ module.exports = class extends Base {
             stamp_id: stampData.stampId,
             created_time: currentTime,
         });
+
+        stampInfo.user_id = userId;
+        stampInfo.status = 101;
 
         return this.success({
             stampInfo

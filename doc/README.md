@@ -1,3 +1,39 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [礼加服务端文档](#%E7%A4%BC%E5%8A%A0%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%96%87%E6%A1%A3)
+  - [提交赠券订单](#%E6%8F%90%E4%BA%A4%E8%B5%A0%E5%88%B8%E8%AE%A2%E5%8D%95)
+    - [url](#url)
+    - [参数](#%E5%8F%82%E6%95%B0)
+    - [结果](#%E7%BB%93%E6%9E%9C)
+  - [支付赠券订单](#%E6%94%AF%E4%BB%98%E8%B5%A0%E5%88%B8%E8%AE%A2%E5%8D%95)
+    - [url](#url-1)
+    - [参数](#%E5%8F%82%E6%95%B0-1)
+    - [结果](#%E7%BB%93%E6%9E%9C-1)
+  - [赠券列表](#%E8%B5%A0%E5%88%B8%E5%88%97%E8%A1%A8)
+    - [url](#url-2)
+    - [参数](#%E5%8F%82%E6%95%B0-2)
+    - [结果](#%E7%BB%93%E6%9E%9C-2)
+  - [赠券详情](#%E8%B5%A0%E5%88%B8%E8%AF%A6%E6%83%85)
+    - [url](#url-3)
+    - [参数](#%E5%8F%82%E6%95%B0-3)
+    - [结果](#%E7%BB%93%E6%9E%9C-3)
+  - [分享赠券(状态是101的才可以分享)](#%E5%88%86%E4%BA%AB%E8%B5%A0%E5%88%B8%E7%8A%B6%E6%80%81%E6%98%AF101%E7%9A%84%E6%89%8D%E5%8F%AF%E4%BB%A5%E5%88%86%E4%BA%AB)
+    - [url](#url-4)
+    - [参数](#%E5%8F%82%E6%95%B0-4)
+    - [结果](#%E7%BB%93%E6%9E%9C-4)
+  - [接收赠券](#%E6%8E%A5%E6%94%B6%E8%B5%A0%E5%88%B8)
+    - [url](#url-5)
+    - [参数](#%E5%8F%82%E6%95%B0-5)
+    - [结果](#%E7%BB%93%E6%9E%9C-5)
+  - [提货-赠券](#%E6%8F%90%E8%B4%A7-%E8%B5%A0%E5%88%B8)
+    - [url](#url-6)
+    - [参数](#%E5%8F%82%E6%95%B0-6)
+    - [结果](#%E7%BB%93%E6%9E%9C-6)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # 礼加服务端文档
 
 ## 提交赠券订单

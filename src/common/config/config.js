@@ -3,7 +3,7 @@ module.exports = {
     default_module: 'api',
     weixin: {
         appid: 'wx657f12737082d414', // 小程序 appid
-        secret: '0e88cfe8eec2b01d55f5a9280f687646', // 小程序密钥
+        secret: '00000000', // 小程序密钥
         mch_id: '15988888888', // 商户帐号ID
         partner_key: 'asdasdasdasdasdasdasd', // 微信支付密钥
         notify_url: 'https://www.您的域名.com/api/pay/notify' // 微信支付异步通知
